@@ -1,0 +1,68 @@
+<!DOCTYPE html><html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Página no encontrada</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;600&display=swap" rel="stylesheet">
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background: #1e1e1e;
+            color: #fff;
+            font-family: 'Poppins', sans-serif;
+            text-align: center;
+        }
+        .container {
+            max-width: 600px;
+        }
+        h1 {
+            font-size: 6rem;
+            margin: 0;
+            animation: pulse 1.5s infinite alternate;
+        }
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            100% { transform: scale(1.1); }
+        }
+        p {
+            font-size: 1.5rem;
+        }
+        .path {
+            font-size: 1.2rem;
+            color: #ff6600;
+            margin-bottom: 20px;
+        }
+        a {
+            display: inline-block;
+            margin-top: 20px;
+            padding: 10px 20px;
+            color: #fff;
+            text-decoration: none;
+            background: #ff6600;
+            border-radius: 5px;
+            transition: background 0.3s;
+        }
+        a:hover {
+            background: #ff4500;
+        }
+    </style>
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            document.getElementById("path-info").textContent = `Ruta buscada: ${window.location.pathname}`;
+        });
+    </script>
+</head>
+<body>
+    <div class="container">
+        <h1>404</h1>
+        <p>Lo sentimos, la página que buscas no existe.</p>
+        <p id="path-info" class="path"></p>
+        <a href="/">Volver al inicio</a>
+    </div>
+</body>
+</html>
