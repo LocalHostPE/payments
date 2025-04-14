@@ -1,0 +1,28 @@
+// --- Configuración ---
+const AUTH_URL = 'https://vxgaccounts.neocities.org/register_login.html'; // URL de la página de autenticación
+const SYSTEM_ID = 'TU_SYSTEM_ID_EMPRESA'; // Reemplaza con el System ID específico de la empresa
+
+function generarTokenUnico(length = 100) {
+    const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_';
+    let token = '';
+    for (let i = 0; i < length; i++) {
+        token += characters.charAt(Math.floor(Math.random() * characters.length));
+    }
+    return token;
+}
+
+function construirURLAutenticacion(redirectURL, systemID, oneTimeToken) {
+    const encodedRedirectURL = encodeURIComponent(redirectURL);
+    return `${AUTH_URL}?redirecturl=${encodedRedirectURL}&systemID=${systemID}&verify=${oneTimeToken}`;
+}
+
+// --- Generación del Token y Construcción de la URL ---
+const redirectURL = 'https://tu_aplicacion.netlify.app/panel'; // URL a la que se redirigirá después del login
+const oneTimeToken = generarTokenUnico(); // Genera un token de 100 caracteres
+const urlDeAutenticacion = construirURLAutenticacion(redirectURL, SYSTEM_ID, oneTimeToken);
+
+console.log('URL de Autenticación Generada:');
+console.log(urlDeAutenticacion);
+
+// --- Opcional: Redireccionar automáticamente al usuario ---
+// window.location.href = urlDeAutenticacion;
