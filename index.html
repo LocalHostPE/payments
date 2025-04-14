@@ -12,7 +12,7 @@
     <h1>Contenido Protegido</h1>
     <div id="errorContainer" class="error" style="display: none;"></div>
     <div id="contentContainer" class="content">
-        <p>¡Bienvenido, sistema autorizado!</p>
+        <p>¡Bienvenido Estás Accediendo A Este Sistema Con La SystemID=$systemId</p>
         </div>
 
     <script type="module">
@@ -63,7 +63,7 @@
                 contentContainer.style.display = 'block'; // Mostrar el contenido protegido
             } else {
                 console.error(`System ID "${systemIdRecibido}" no es válido o no está autorizado.`);
-                errorContainer.textContent = 'System ID no válido o no autorizado.';
+                errorContainer.textContent = 'System ID no válido o no autorizado Si Tu SystemID Fue Sacado Hace Poco Por Favor Contacta A Soporte Para Reactivarlo';
                 errorContainer.style.display = 'block';
             }
         }
