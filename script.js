@@ -4,7 +4,7 @@ const SYSTEM_ID = '2yc2mNVsnt2v0OA6TWjaueem11PdcSqJ'; // Reemplaza con el System
 const ENTERPRISE_NAME = 'VxGroup-SolucionesTecnologicas'; // Reemplaza con el nombre de la empresa
 
 function generarTokenUnico(length = 100) {
-    const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_';
+    const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_$+@!%-';
     let token = '';
     for (let i = 0; i < length; i++) {
         token += characters.charAt(Math.floor(Math.random() * characters.length));
