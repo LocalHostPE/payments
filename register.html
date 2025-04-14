@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Registro de Empresa</title>
+    <style>
+        body { font-family: sans-serif; }
+        .container { width: 350px; margin: 50px auto; border: 1px solid #ccc; padding: 20px; border-radius: 5px; }
+        input[type="email"], input[type="password"], button { width: 100%; padding: 10px; margin-bottom: 10px; box-sizing: border-box; }
+        .error { color: red; }
+        #welcomeMessage { margin-bottom: 20px; font-weight: bold; }
+        #verificationMessage { margin-bottom: 20px; font-style: italic; }
+        #registerForm { display: block; } /* Mostrar el formulario de registro por defecto */
+        #registerError { display: none; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Registro de Empresa</h1>
+
+        <p id="welcomeMessage"></p>
+        <p id="verificationMessage"></p>
+
+        <form id="registerForm">
+            <input type="email" id="registerEmail" placeholder="Correo Electrónico" required>
+            <input type="password" id="registerPassword" placeholder="Contraseña" required>
+            <button type="submit">Registrarse</button>
+            <p id="registerError" class="error"></p>
+        </form>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js";
+        import { getDatabase, ref, get, update } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js";
+        import { getAuth, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-auth.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBnEqFutPsGSEhIyIoOGGHdD4mPWbhjxVU",
+            authDomain: "vxgauth.firebaseapp.com",
+            databaseURL: "https://vxgauth-default-rtdb.firebaseio.com",
+            projectId: "vxgauth",
+            storageBucket: "vxgauth.firebasestorage.app",
+            messagingSenderId: "446667237631",
+            appId: "1:446667237631:web:9245077513b5c9faf504ca",
+            measurementId: "G-5YHSRMWWHZ"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const database = getDatabase(app);
+        const auth = getAuth(app);
+
+        const welcomeMessageElement = document.getElementById('welcomeMessage');
+        const verificationMessageElement = document.getElementById('verificationMessage');
+        const registerForm = document.getElementById('registerForm');
+        const registerEmailInput = document.getElementById('registerEmail');
+        const registerPasswordInput = document.getElementById('registerPassword');
+        const registerError = document.getElementById('registerError');
+
+        let redirectUrl = null;
+        let systemIdFromUrl = null;
+        let verificationToken = null;
+        let isSystemIdValid = false;
+
+        function obtenerParametrosURL() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const redirect = urlParams.get('redirecturl');
+            const systemID = urlParams.get('systemID');
+            const verify = urlParams.get('verify');
+            const enterprise = urlParams.get('enterprice');
+            return { redirect, systemID, verify, enterprise };
+        }
+
+        async function verificarSystemId(systemId) {
+            if (!systemId) {
+                return false;
+            }
+            const systemIdRef = ref(database, `authorizedSystems/${systemId}`);
+            try {
+                const snapshot = await get(systemIdRef);
+                return snapshot.exists();
+            } catch (error) {
+                console.error("Error al verificar systemId:", error);
+                return false;
+            }
+        }
+
+        async function verificarTokenUnico(systemId, token) {
+            if (!systemId || !token) {
+                return false;
+            }
+            const tokensRef = ref(database, `authorizedSystems/${systemId}/oneTimeTokens/${token}`);
+            try {
+                const snapshot = await get(tokensRef);
+                if (snapshot.exists() && snapshot.val() === true) { // true para usar
+                    await update(ref(database, `authorizedSystems/${systemId}/oneTimeTokens`), { [token]: false }); // false para usado
+                    return true;
+                } else {
+                    return false;
+                }
+            } catch (error) {
+                console.error("Error al verificar token único:", error);
+                return false;
+            }
+        }
+
+        async function iniciarVerificacion() {
+            const urlParamsData = obtenerParametrosURL();
+            redirectUrl = urlParamsData.redirect;
+            systemIdFromUrl = urlParamsData.systemID;
+            verificationToken = urlParamsData.verify;
+            const enterpriseName = urlParamsData.enterprise;
+
+            if (enterpriseName) {
+                welcomeMessageElement.textContent = `Bienvenido, ${decodeURIComponent(enterpriseName)}!`;
+            }
+
+            if (systemIdFromUrl && verificationToken) {
+                const isSystemIdPresent = await verificarSystemId(systemIdFromUrl);
+                if (isSystemIdPresent) {
+                    const isTokenValid = await verificarTokenUnico(systemIdFromUrl, verificationToken);
+                    if (isTokenValid) {
+                        isSystemIdValid = true;
+                        verificationMessageElement.textContent = 'System ID y token verificados. Puede registrarse.';
+                    } else {
+                        verificationMessageElement.textContent = 'Token de verificación inválido o ya utilizado.';
+                        // Puedes decidir si mostrar o ocultar el formulario aquí si la verificación falla
+                    }
+                } else {
+                    verificationMessageElement.textContent = 'System ID no válido.';
+                    // Puedes decidir si mostrar o ocultar el formulario aquí si la verificación falla
+                }
+            } else {
+                verificationMessageElement.textContent = 'Faltan parámetros de autorización (redirecturl, systemID, verify).';
+                // Puedes decidir si mostrar o ocultar el formulario aquí si faltan parámetros
+            }
+        }
+
+        iniciarVerificacion();
+
+        registerForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = registerEmailInput.value;
+            const password = registerPasswordInput.value;
+            registerError.textContent = '';
+
+            if (isSystemIdValid) {
+                try {
+                    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+                    const user = userCredential.user;
+                    console.log('Usuario registrado:', user);
+                    if (redirectUrl) {
+                        window.location.href = decodeURIComponent(redirectUrl);
+                    } else {
+                        window.location.href = 'https://vxgapp.netlify.app/dashboard.html';
+                    }
+                } catch (error) {
+                    const errorCode = error.code;
+                    const errorMessage = error.message;
+                    registerError.textContent = `Error de registro: ${errorMessage} (${errorCode})`;
+                }
+            } else {
+                registerError.textContent = 'La verificación inicial falló. No se puede registrar.';
+            }
+        });
+    </script>
+</body>
+</html>
