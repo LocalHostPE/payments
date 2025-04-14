@@ -1,6 +1,6 @@
 // --- Configuración ---
-const AUTH_URL = 'https://vxgaccounts.neocities.org/register_login.html'; // URL de la página de autenticación
-const SYSTEM_ID = 'TU_SYSTEM_ID_EMPRESA'; // Reemplaza con el System ID específico de la empresa
+const AUTH_URL = 'https://votrox.vercel.app/auth.html'; // URL de la página de autenticación
+const SYSTEM_ID = '2yc2mNVsnt2v0OA6TWjaueem11PdcSqJ'; // Reemplaza con el System ID específico de la empresa
 
 function generarTokenUnico(length = 100) {
     const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_';
