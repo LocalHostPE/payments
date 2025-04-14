@@ -1,1 +1,76 @@
-fetch {localhost:8898}
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Página Protegida</title>
+    <style>
+        body { font-family: sans-serif; }
+        .error { color: red; }
+        .content { display: none; margin-top: 20px; border: 1px solid #ccc; padding: 15px; }
+    </style>
+</head>
+<body>
+    <h1>Contenido Protegido</h1>
+    <div id="errorContainer" class="error" style="display: none;"></div>
+    <div id="contentContainer" class="content">
+        <p>¡Bienvenido, sistema autorizado!</p>
+        </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js";
+        import { getDatabase, ref, get } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBnEqFutPsGSEhIyIoOGGHdD4mPWbhjxVU",
+            authDomain: "vxgauth.firebaseapp.com",
+            databaseURL: "https://vxgauth-default-rtdb.firebaseio.com",
+            projectId: "vxgauth",
+            storageBucket: "vxgauth.firebasestorage.app",
+            messagingSenderId: "446667237631",
+            appId: "1:446667237631:web:9245077513b5c9faf504ca",
+            measurementId: "G-5YHSRMWWHZ"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const database = getDatabase(app);
+
+        function obtenerSystemIdDeLaURL() {
+            const urlParams = new URLSearchParams(window.location.search);
+            return urlParams.get('systemId');
+        }
+
+        async function verificarSystemId(systemId) {
+            if (!systemId) {
+                return false;
+            }
+            const systemIdRef = ref(database, 'authorizedSystems/' + systemId);
+            try {
+                const snapshot = await get(systemIdRef);
+                return snapshot.exists();
+            } catch (error) {
+                console.error("Error al verificar systemId:", error);
+                return false;
+            }
+        }
+
+        async function iniciarVerificacion() {
+            const systemIdRecibido = obtenerSystemIdDeLaURL();
+            const esValido = await verificarSystemId(systemIdRecibido);
+            const errorContainer = document.getElementById('errorContainer');
+            const contentContainer = document.getElementById('contentContainer');
+
+            if (esValido) {
+                console.log(`System ID "${systemIdRecibido}" es válido. Mostrando contenido.`);
+                contentContainer.style.display = 'block'; // Mostrar el contenido protegido
+            } else {
+                console.error(`System ID "${systemIdRecibido}" no es válido o no está autorizado.`);
+                errorContainer.textContent = 'System ID no válido o no autorizado.';
+                errorContainer.style.display = 'block';
+            }
+        }
+
+        // Iniciar la verificación cuando la página se carga
+        iniciarVerificacion();
+    </script>
+</body>
+</html>
+
