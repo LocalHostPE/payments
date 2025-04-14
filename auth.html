@@ -1,36 +1,26 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Registro e Inicio de Sesión de Empresa</title>
+    <title>Iniciar Sesión de Empresa</title>
     <style>
         body { font-family: sans-serif; }
         .container { width: 350px; margin: 50px auto; border: 1px solid #ccc; padding: 20px; border-radius: 5px; }
         input[type="email"], input[type="password"], button { width: 100%; padding: 10px; margin-bottom: 10px; box-sizing: border-box; }
         .error { color: red; }
-        .success { color: green; }
-        .auth-options { margin-top: 20px; border-top: 1px solid #eee; padding-top: 20px; }
         #welcomeMessage { margin-bottom: 20px; font-weight: bold; }
         #verificationMessage { margin-bottom: 20px; font-style: italic; }
+        #loginFormContainer { display: none; }
+        .auth-options { margin-top: 20px; border-top: 1px solid #eee; padding-top: 20px; }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>Registro e Inicio de Sesión de Empresa</h1>
+        <h1>Iniciar Sesión de Empresa</h1>
 
         <p id="welcomeMessage"></p>
         <p id="verificationMessage"></p>
 
-        <div id="authForms" style="display: none;">
-            <h2>Crear Cuenta</h2>
-            <form id="registerForm">
-                <input type="email" id="registerEmail" placeholder="Correo Electrónico" required>
-                <input type="password" id="registerPassword" placeholder="Contraseña" required>
-                <button type="submit">Registrarse</button>
-                <p id="registerError" class="error" style="display: none;"></p>
-                <p id="registerSuccess" class="success" style="display: none;"></p>
-            </form>
-
-            <h2>Iniciar Sesión</h2>
+        <div id="loginFormContainer">
             <form id="loginForm">
                 <input type="email" id="loginEmail" placeholder="Correo Electrónico" required>
                 <input type="password" id="loginPassword" placeholder="Contraseña" required>
@@ -48,7 +38,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js";
         import { getDatabase, ref, get, update } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js";
-        import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup, signOut } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-auth.js";
+        import { getAuth, signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-auth.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyBnEqFutPsGSEhIyIoOGGHdD4mPWbhjxVU",
@@ -68,19 +58,11 @@
 
         const welcomeMessageElement = document.getElementById('welcomeMessage');
         const verificationMessageElement = document.getElementById('verificationMessage');
-        const authFormsDiv = document.getElementById('authForms');
-
-        const registerForm = document.getElementById('registerForm');
-        const registerEmailInput = document.getElementById('registerEmail');
-        const registerPasswordInput = document.getElementById('registerPassword');
-        const registerError = document.getElementById('registerError');
-        const registerSuccess = document.getElementById('registerSuccess');
-
+        const loginFormContainer = document.getElementById('loginFormContainer');
         const loginForm = document.getElementById('loginForm');
         const loginEmailInput = document.getElementById('loginEmail');
         const loginPasswordInput = document.getElementById('loginPassword');
         const loginError = document.getElementById('loginError');
-
         const googleSignInBtn = document.getElementById('googleSignInBtn');
 
         let redirectUrl = null;
@@ -147,8 +129,8 @@
                     const isTokenValid = await verificarTokenUnico(systemIdFromUrl, verificationToken);
                     if (isTokenValid) {
                         isSystemIdValid = true;
-                        authFormsDiv.style.display = 'block';
-                        verificationMessageElement.textContent = 'System ID y token verificados. Puede registrarse o iniciar sesión.';
+                        loginFormContainer.style.display = 'block'; // Mostrar el formulario de inicio de sesión
+                        verificationMessageElement.textContent = 'System ID y token verificados. Puede iniciar sesión.';
                     } else {
                         verificationMessageElement.textContent = 'Token de verificación inválido o ya utilizado.';
                     }
@@ -161,33 +143,6 @@
         }
 
         iniciarVerificacion();
-
-        registerForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            if (!isSystemIdValid) {
-                alert('La verificación inicial falló. No puede registrarse.');
-                return;
-            }
-
-            const email = registerEmailInput.value;
-            const password = registerPasswordInput.value;
-            registerError.style.display = 'none';
-            registerSuccess.style.display = 'none';
-
-            try {
-                const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-                const user = userCredential.user;
-                console.log('Usuario registrado:', user);
-                registerSuccess.textContent = 'Registro exitoso. ¡Ahora puedes iniciar sesión!';
-                registerSuccess.style.display = 'block';
-                registerForm.reset();
-            } catch (error) {
-                const errorCode = error.code;
-                const errorMessage = error.message;
-                registerError.textContent = `Error de registro: ${errorMessage} (${errorCode})`;
-                registerError.style.display = 'block';
-            }
-        });
 
         loginForm.addEventListener('submit', async (e) => {
             e.preventDefault();
