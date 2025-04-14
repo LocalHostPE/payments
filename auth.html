@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Registro e Inicio de Sesión de Empresa</title>
+    <style>
+        body { font-family: sans-serif; }
+        .container { width: 350px; margin: 50px auto; border: 1px solid #ccc; padding: 20px; border-radius: 5px; }
+        input[type="email"], input[type="password"], button { width: 100%; padding: 10px; margin-bottom: 10px; box-sizing: border-box; }
+        .error { color: red; }
+        .success { color: green; }
+        .auth-options { margin-top: 20px; border-top: 1px solid #eee; padding-top: 20px; }
+        #welcomeMessage { margin-bottom: 20px; font-weight: bold; }
+        #verificationMessage { margin-bottom: 20px; font-style: italic; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Registro e Inicio de Sesión de Empresa</h1>
+
+        <p id="welcomeMessage"></p>
+        <p id="verificationMessage"></p>
+
+        <div id="authForms" style="display: none;">
+            <h2>Crear Cuenta</h2>
+            <form id="registerForm">
+                <input type="email" id="registerEmail" placeholder="Correo Electrónico" required>
+                <input type="password" id="registerPassword" placeholder="Contraseña" required>
+                <button type="submit">Registrarse</button>
+                <p id="registerError" class="error" style="display: none;"></p>
+                <p id="registerSuccess" class="success" style="display: none;"></p>
+            </form>
+
+            <h2>Iniciar Sesión</h2>
+            <form id="loginForm">
+                <input type="email" id="loginEmail" placeholder="Correo Electrónico" required>
+                <input type="password" id="loginPassword" placeholder="Contraseña" required>
+                <button type="submit">Iniciar Sesión</button>
+                <p id="loginError" class="error" style="display: none;"></p>
+            </form>
+
+            <div class="auth-options">
+                <h2>O iniciar sesión con</h2>
+                <button id="googleSignInBtn">Iniciar sesión con Google</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js";
+        import { getDatabase, ref, get } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js";
+        import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup, signOut } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-auth.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBnEqFutPsGSEhIyIoOGGHdD4mPWbhjxVU",
+            authDomain: "vxgauth.firebaseapp.com",
+            databaseURL: "https://vxgauth-default-rtdb.firebaseio.com",
+            projectId: "vxgauth",
+            storageBucket: "vxgauth.firebasestorage.app",
+            messagingSenderId: "446667237631",
+            appId: "1:446667237631:web:9245077513b5c9faf504ca",
+            measurementId: "G-5YHSRMWWHZ"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const database = getDatabase(app);
+        const auth = getAuth(app);
+        const googleProvider = new GoogleAuthProvider();
+
+        const welcomeMessageElement = document.getElementById('welcomeMessage');
+        const verificationMessageElement = document.getElementById('verificationMessage');
+        const authFormsDiv = document.getElementById('authForms');
+
+        const registerForm = document.getElementById('registerForm');
+        const registerEmailInput = document.getElementById('registerEmail');
+        const registerPasswordInput = document.getElementById('registerPassword');
+        const registerError = document.getElementById('registerError');
+        const registerSuccess = document.getElementById('registerSuccess');
+
+        const loginForm = document.getElementById('loginForm');
+        const loginEmailInput = document.getElementById('loginEmail');
+        const loginPasswordInput = document.getElementById('loginPassword');
+        const loginError = document.getElementById('loginError');
+
+        const googleSignInBtn = document.getElementById('googleSignInBtn');
+
+        let redirectUrl = null;
+        let systemIdFromUrl = null;
+        let verificationToken = null;
+        let isSystemIdValid = false;
+
+        function obtenerParametrosURL() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const redirect = urlParams.get('redirecturl');
+            const systemID = urlParams.get('systemID');
+            const verify = urlParams.get('verify');
+            return { redirect, systemID, verify };
+        }
+
+        async function verificarSystemId(systemId) {
+            if (!systemId) {
+                return false;
+            }
+            const systemIdRef = ref(database, 'authorizedSystems/' + systemId);
+            try {
+                const snapshot = await get(systemIdRef);
+                return snapshot.exists();
+            } catch (error) {
+                console.error("Error al verificar systemId:", error);
+                return false;
+            }
+        }
+
+        async function verificarTokenUnico(systemId, token) {
+            if (!systemId || !token) {
+                return false;
+            }
+            const tokensRef = ref(database, `authorizedSystems/${systemId}/oneTimeTokens/${token}`);
+            try {
+                const snapshot = await get(tokensRef);
+                if (snapshot.exists() && snapshot.val() === false) {
+                    // Marcar el token como usado
+                    await update(ref(database, `authorizedSystems/${systemId}/oneTimeTokens`), { [token]: true });
+                    return true;
+                } else {
+                    return false;
+                }
+            } catch (error) {
+                console.error("Error al verificar token único:", error);
+                return false;
+            }
+        }
+
+        async function iniciarVerificacion() {
+            const urlParamsData = obtenerParametrosURL();
+            redirectUrl = urlParamsData.redirect;
+            systemIdFromUrl = urlParamsData.systemID;
+            verificationToken = urlParamsData.verify;
+
+            if (systemIdFromUrl && verificationToken) {
+                const isSystemIdPresent = await verificarSystemId(systemIdFromUrl);
+                if (isSystemIdPresent) {
+                    const isTokenValid = await verificarTokenUnico(systemIdFromUrl, verificationToken);
+                    if (isTokenValid) {
+                        isSystemIdValid = true;
+                        authFormsDiv.style.display = 'block';
+                        verificationMessageElement.textContent = 'System ID y token verificados. Puede registrarse o iniciar sesión.';
+                    } else {
+                        verificationMessageElement.textContent = 'Token de verificación inválido o ya utilizado.';
+                    }
+                } else {
+                    verificationMessageElement.textContent = 'System ID no válido.';
+                }
+            } else {
+                verificationMessageElement.textContent = 'Faltan parámetros de autorización (redirecturl, systemID, verify).';
+            }
+
+            const enterpriseName = new URLSearchParams(window.location.search).get('enterprice');
+            if (enterpriseName) {
+                welcomeMessageElement.textContent = `Bienvenido, ${decodeURIComponent(enterpriseName)}!`;
+            }
+        }
+
+        iniciarVerificacion();
+
+        registerForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if (!isSystemIdValid) {
+                alert('La verificación inicial falló. No puede registrarse.');
+                return;
+            }
+
+            const email = registerEmailInput.value;
+            const password = registerPasswordInput.value;
+            registerError.style.display = 'none';
+            registerSuccess.style.display = 'none';
+
+            try {
+                const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+                const user = userCredential.user;
+                console.log('Usuario registrado:', user);
+                registerSuccess.textContent = 'Registro exitoso. ¡Ahora puedes iniciar sesión!';
+                registerSuccess.style.display = 'block';
+                registerForm.reset();
+            } catch (error) {
+                const errorCode = error.code;
+                const errorMessage = error.message;
+                registerError.textContent = `Error de registro: ${errorMessage} (${errorCode})`;
+                registerError.style.display = 'block';
+            }
+        });
+
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = loginEmailInput.value;
+            const password = loginPasswordInput.value;
+            loginError.style.display = 'none';
+
+            try {
+                const userCredential = await signInWithEmailAndPassword(auth, email, password);
+                const user = userCredential.user;
+                console.log('Usuario logueado:', user);
+                if (redirectUrl) {
+                    window.location.href = decodeURIComponent(redirectUrl);
+                } else {
+                    window.location.href = 'https://vxgapp.netlify.app/dashboard.html';
+                }
+            } catch (error) {
+                const errorCode = error.code;
+                const errorMessage = error.message;
+                loginError.textContent = `Error de inicio de sesión: ${errorMessage} (${errorCode})`;
+                loginError.style.display = 'block';
+            }
+        });
+
+        googleSignInBtn.addEventListener('click', async () => {
+            if (!isSystemIdValid) {
+                alert('La verificación inicial falló. No puede iniciar sesión con Google.');
+                return;
+            }
+
+            try {
+                const result = await signInWithPopup(auth, googleProvider);
+                const user = result.user;
+                const credential = GoogleAuthProvider.credentialFromResult(result);
+                const token = credential?.accessToken;
+                console.log('Usuario logueado con Google:', user, token);
+                if (redirectUrl) {
+                    window.location.href = decodeURIComponent(redirectUrl);
+                } else {
+                    window.location.href = 'https://vxgapp.netlify.app/dashboard.html';
+                }
+            } catch (error) {
+                const errorCode = error.code;
+                const errorMessage = error.message;
+                alert(`Error al iniciar sesión con Google: ${errorMessage} (${errorCode})`);
+            }
+        });
+    </script>
+</body>
+</html>
