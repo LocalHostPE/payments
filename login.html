@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Iniciar Sesión de Empresa</title>
+    <style>
+        body { font-family: sans-serif; }
+        .container { width: 350px; margin: 50px auto; border: 1px solid #ccc; padding: 20px; border-radius: 5px; }
+        input[type="email"], input[type="password"], button { width: 100%; padding: 10px; margin-bottom: 10px; box-sizing: border-box; }
+        .error { color: red; }
+        #welcomeMessage { margin-bottom: 20px; font-weight: bold; }
+        #verificationMessage { margin-bottom: 20px; font-style: italic; }
+        .auth-options { margin-top: 20px; border-top: 1px solid #eee; padding-top: 20px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Iniciar Sesión de Empresa</h1>
+
+        <p id="welcomeMessage"></p>
+        <p id="verificationMessage"></p>
+
+        <form id="loginForm">
+            <input type="email" id="loginEmail" placeholder="Correo Electrónico" required>
+            <input type="password" id="loginPassword" placeholder="Contraseña" required>
+            <button type="submit">Iniciar Sesión</button>
+            <p id="loginError" class="error" style="display: none;"></p>
+        </form>
+
+        <div class="auth-options">
+            <h2>O iniciar sesión con</h2>
+            <button id="googleSignInBtn">Iniciar sesión con Google</button>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js";
+        import { getDatabase, ref, get, update } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js";
+        import { getAuth, signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-auth.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBnEqFutPsGSEhIyIoOGGHdD4mPWbhjxVU",
+            authDomain: "vxgauth.firebaseapp.com",
+            databaseURL: "https://vxgauth-default-rtdb.firebaseio.com",
+            projectId: "vxgauth",
+            storageBucket: "vxgauth.firebasestorage.app",
+            messagingSenderId: "446667237631",
+            appId: "1:446667237631:web:9245077513b5c9faf504ca",
+            measurementId: "G-5YHSRMWWHZ"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const database = getDatabase(app);
+        const auth = getAuth(app);
+        const googleProvider = new GoogleAuthProvider();
+
+        const welcomeMessageElement = document.getElementById('welcomeMessage');
+        const verificationMessageElement = document.getElementById('verificationMessage');
+        const loginForm = document.getElementById('loginForm');
+        const loginEmailInput = document.getElementById('loginEmail');
+        const loginPasswordInput = document.getElementById('loginPassword');
+        const loginError = document.getElementById('loginError');
+        const googleSignInBtn = document.getElementById('googleSignInBtn');
+
+        let redirectUrl = null;
+        let systemIdFromUrl = null;
+        let verificationToken = null;
+        let isSystemIdValid = false;
+
+        function obtenerParametrosURL() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const redirect = urlParams.get('redirecturl');
+            const systemID = urlParams.get('systemID');
+            const verify = urlParams.get('verify');
+            const enterprise = urlParams.get('enterprice');
+            return { redirect, systemID, verify, enterprise };
+        }
+
+        async function verificarSystemId(systemId) {
+            if (!systemId) {
+                return false;
+            }
+            const systemIdRef = ref(database, `authorizedSystems/${systemId}`);
+            try {
+                const snapshot = await get(systemIdRef);
+                return snapshot.exists();
+            } catch (error) {
+                console.error("Error al verificar systemId:", error);
+                return false;
+            }
+        }
+
+        async function verificarTokenUnico(systemId, token) {
+            if (!systemId || !token) {
+                return false;
+            }
+            const tokensRef = ref(database, `authorizedSystems/${systemId}/oneTimeTokens/${token}`);
+            try {
+                const snapshot = await get(tokensRef);
+                if (snapshot.exists() && snapshot.val() === true) { // true para usar
+                    await update(ref(database, `authorizedSystems/${systemId}/oneTimeTokens`), { [token]: false }); // false para usado
+                    return true;
+                } else {
+                    return false;
+                }
+            } catch (error) {
+                console.error("Error al verificar token único:", error);
+                return false;
+            }
+        }
+
+        async function iniciarVerificacion() {
+            const urlParamsData = obtenerParametrosURL();
+            redirectUrl = urlParamsData.redirect;
+            systemIdFromUrl = urlParamsData.systemID;
+            verificationToken = urlParamsData.verify;
+            const enterpriseName = urlParamsData.enterprise;
+
+            if (enterpriseName) {
+                welcomeMessageElement.textContent = `Bienvenido, ${decodeURIComponent(enterpriseName)}!`;
+            }
+
+            if (systemIdFromUrl && verificationToken) {
+                const isSystemIdPresent = await verificarSystemId(systemIdFromUrl);
+                if (isSystemIdPresent) {
+                    const isTokenValid = await verificarTokenUnico(systemIdFromUrl, verificationToken);
+                    if (isTokenValid) {
+                        isSystemIdValid = true;
+                        verificationMessageElement.textContent = 'System ID y token verificados. Puede iniciar sesión.';
+                    } else {
+                        verificationMessageElement.textContent = 'Token de verificación inválido o ya utilizado.';
+                    }
+                } else {
+                    verificationMessageElement.textContent = 'System ID no válido.';
+                }
+            } else {
+                verificationMessageElement.textContent = 'Faltan parámetros de autorización (redirecturl, systemID, verify).';
+            }
+        }
+
+        iniciarVerificacion();
+
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = loginEmailInput.value;
+            const password = loginPasswordInput.value;
+            loginError.style.display = 'none';
+
+            if (isSystemIdValid) {
+                try {
+                    const userCredential = await signInWithEmailAndPassword(auth, email, password);
+                    const user = userCredential.user;
+                    console.log('Usuario logueado:', user);
+                    if (redirectUrl) {
+                        window.location.href = decodeURIComponent(redirectUrl);
+                    } else {
+                        window.location.href = 'https://vxgapp.netlify.app/dashboard.html';
+                    }
+                } catch (error) {
+                    const errorCode = error.code;
+                    const errorMessage = error.message;
+                    loginError.textContent = `Error de inicio de sesión: ${errorMessage} (${errorCode})`;
+                    loginError.style.display = 'block';
+                }
+            } else {
+                loginError.textContent = 'La verificación inicial falló. No se puede iniciar sesión.';
+                loginError.style.display = 'block';
+            }
+        });
+
+        googleSignInBtn.addEventListener('click', async () => {
+            if (isSystemIdValid) {
+                try {
+                    const result = await signInWithPopup(auth, googleProvider);
+                    const user = result.user;
+                    const credential = GoogleAuthProvider.credentialFromResult(result);
+                    const token = credential?.accessToken;
+                    console.log('Usuario logueado con Google:', user, token);
+                    if (redirectUrl) {
+                        window.location.href = decodeURIComponent(redirectUrl);
+                    } else {
+                        window.location.href = 'https://vxgapp.netlify.app/dashboard.html';
+                    }
+                } catch (error) {
+                    const errorCode = error.code;
+                    const errorMessage = error.message;
+                    alert(`Error al iniciar sesión con Google: ${errorMessage} (${errorCode})`);
+                }
+            } else {
+                alert('La verificación inicial falló. No se puede iniciar sesión con Google.');
+            }
+        });
+    </script>
+</body>
+</html>
