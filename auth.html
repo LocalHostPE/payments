@@ -47,7 +47,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js";
-        import { getDatabase, ref, get } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js";
+        import { getDatabase, ref, get, update } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js";
         import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup, signOut } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-auth.js";
 
         const firebaseConfig = {
@@ -93,14 +93,15 @@
             const redirect = urlParams.get('redirecturl');
             const systemID = urlParams.get('systemID');
             const verify = urlParams.get('verify');
-            return { redirect, systemID, verify };
+            const enterprise = urlParams.get('enterprice');
+            return { redirect, systemID, verify, enterprise };
         }
 
         async function verificarSystemId(systemId) {
             if (!systemId) {
                 return false;
             }
-            const systemIdRef = ref(database, 'authorizedSystems/' + systemId);
+            const systemIdRef = ref(database, `authorizedSystems/${systemId}`);
             try {
                 const snapshot = await get(systemIdRef);
                 return snapshot.exists();
@@ -117,9 +118,8 @@
             const tokensRef = ref(database, `authorizedSystems/${systemId}/oneTimeTokens/${token}`);
             try {
                 const snapshot = await get(tokensRef);
-                if (snapshot.exists() && snapshot.val() === false) {
-                    // Marcar el token como usado
-                    await update(ref(database, `authorizedSystems/${systemId}/oneTimeTokens`), { [token]: true });
+                if (snapshot.exists() && snapshot.val() === true) { // true para usar
+                    await update(ref(database, `authorizedSystems/${systemId}/oneTimeTokens`), { [token]: false }); // false para usado
                     return true;
                 } else {
                     return false;
@@ -135,6 +135,11 @@
             redirectUrl = urlParamsData.redirect;
             systemIdFromUrl = urlParamsData.systemID;
             verificationToken = urlParamsData.verify;
+            const enterpriseName = urlParamsData.enterprise;
+
+            if (enterpriseName) {
+                welcomeMessageElement.textContent = `Bienvenido, ${decodeURIComponent(enterpriseName)}!`;
+            }
 
             if (systemIdFromUrl && verificationToken) {
                 const isSystemIdPresent = await verificarSystemId(systemIdFromUrl);
@@ -152,11 +157,6 @@
                 }
             } else {
                 verificationMessageElement.textContent = 'Faltan parámetros de autorización (redirecturl, systemID, verify).';
-            }
-
-            const enterpriseName = new URLSearchParams(window.location.search).get('enterprice');
-            if (enterpriseName) {
-                welcomeMessageElement.textContent = `Bienvenido, ${decodeURIComponent(enterpriseName)}!`;
             }
         }
 
