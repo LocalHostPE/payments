@@ -1,59 +1,121 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Prueba Generación de Token</title>
+    <title>Generador de System ID</title>
     <style>
-        #urlContainer { margin-top: 20px; }
+        body { font-family: sans-serif; }
+        .container { width: 350px; margin: 50px auto; border: 1px solid #ccc; padding: 20px; border-radius: 5px; }
+        input[type="text"], button { width: 100%; padding: 10px; margin-bottom: 10px; box-sizing: border-box; }
+        #resultado { margin-top: 20px; border: 1px solid #eee; padding: 15px; border-radius: 5px; display: none; }
         #urlOutput { white-space: pre-wrap; }
     </style>
 </head>
 <body>
-    <h1>Prueba de Generación de Token Único</h1>
+    <div class="container">
+        <h1>Generador de System ID</h1>
+        <input type="text" id="nombreEmpresa" placeholder="Nombre de la Empresa" required>
+        <button id="generarBtn">Generar System ID y URL</button>
 
-    <button id="generarURLBtn">Generar URL de Autenticación</button>
-    <div id="urlContainer">
-        <strong>URL Generada:</strong>
-        <pre id="urlOutput"></pre>
-        <button id="copiarURLBtn" style="display: none; margin-top: 10px;">Copiar URL</button>
-        <p id="copiadoMensaje" style="color: green; display: none;">¡URL copiada al portapapeles!</p>
+        <div id="resultado" style="display: none;">
+            <h2>Resultado</h2>
+            <p><strong>System ID Generado:</strong> <span id="systemIdGenerado"></span></p>
+            <p><strong>URL de Autenticación:</strong></p>
+            <pre id="urlOutput"></pre>
+        </div>
+        <p id="errorMensaje" style="color: red; display: none;">Ocurrió un error al generar el System ID.</p>
     </div>
 
-    <script src="script.js"></script>
-    <script>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js";
+        import { getDatabase, ref, set } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBnEqFutPsGSEhIyIoOGGHdD4mPWbhjxVU",
+            authDomain: "vxgauth.firebaseapp.com",
+            databaseURL: "https://vxgauth-default-rtdb.firebaseio.com",
+            projectId: "vxgauth",
+            storageBucket: "vxgauth.firebasestorage.app",
+            messagingSenderId: "446667237631",
+            appId: "1:446667237631:web:9245077513b5c9faf504ca",
+            measurementId: "G-5YHSRMWWHZ"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const database = getDatabase(app);
+        const authorizedSystemsRef = ref(database, 'authorizedSystems');
+        const AUTH_URL = 'https://votrox.vercel.app/auth.html'; // Ajusta si tu página de login es diferente
+
+        function generarSystemIdUnico(length = 20) {
+            const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_';
+            let systemId = '';
+            for (let i = 0; i < length; i++) {
+                systemId += characters.charAt(Math.floor(Math.random() * characters.length));
+            }
+            return systemId;
+        }
+
+        function generarTokenUnico(length = 100) {
+            const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_';
+            let token = '';
+            for (let i = 0; i < length; i++) {
+                token += characters.charAt(Math.floor(Math.random() * characters.length));
+            }
+            return token;
+        }
+
+        async function crearSystemIdConTokens(enterpriseName, numberOfTokens = 5) {
+            const systemId = generarSystemIdUnico();
+            const oneTimeTokens = {};
+            for (let i = 0; i < numberOfTokens; i++) {
+                const token = generarTokenUnico();
+                oneTimeTokens[token] = true; // El token generado es la clave
+            }
+
+            const systemData = {
+                enterpriseName: enterpriseName,
+                isActive: true,
+                oneTimeTokens: oneTimeTokens // Guardamos el objeto de tokens
+            };
+
+            try {
+                await set(authorizedSystemsRef.child(systemId), systemData);
+                console.log(`System ID "${systemId}" creado para "${enterpriseName}" con ${numberOfTokens} tokens.`);
+                return { systemId, firstToken: Object.keys(oneTimeTokens)[0] };
+            } catch (error) {
+                console.error('Error al crear System ID:', error);
+                return null;
+            }
+        }
+
         document.addEventListener('DOMContentLoaded', () => {
-            const generarURLBtn = document.getElementById('generarURLBtn');
-            const urlOutput = document.getElementById('urlOutput');
-            const copiarURLBtn = document.getElementById('copiarURLBtn');
-            const copiadoMensaje = document.getElementById('copiadoMensaje');
+            const generarBtn = document.getElementById('generarBtn');
+            const nombreEmpresaInput = document.getElementById('nombreEmpresa');
+            const resultadoDiv = document.getElementById('resultado');
+            const systemIdSpan = document.getElementById('systemIdGenerado');
+            const urlOutputPre = document.getElementById('urlOutput');
+            const errorMensajeP = document.getElementById('errorMensaje');
 
-            generarURLBtn.addEventListener('click', () => {
-                if (typeof urlDeAutenticacion !== 'undefined') {
-                    urlOutput.textContent = urlDeAutenticacion;
-                    copiarURLBtn.style.display = 'inline-block';
-                } else {
-                    urlOutput.textContent = 'Ejecuta el script script.js para generar la URL.';
-                    copiarURLBtn.style.display = 'none';
+            generarBtn.addEventListener('click', async () => {
+                const nombreEmpresa = nombreEmpresaInput.value.trim();
+                if (!nombreEmpresa) {
+                    alert('Por favor, ingresa el nombre de la empresa.');
+                    return;
                 }
-                copiadoMensaje.style.display = 'none'; // Ocultar mensaje al generar nueva URL
-            });
 
-            copiarURLBtn.addEventListener('click', () => {
-                if (urlOutput.textContent) {
-                    navigator.clipboard.writeText(urlOutput.textContent)
-                        .then(() => {
-                            copiadoMensaje.style.display = 'block';
-                            setTimeout(() => {
-                                copiadoMensaje.style.display = 'none';
-                            }, 2000); // Ocultar mensaje después de 2 segundos
-                        })
-                        .catch(err => {
-                            console.error('Error al copiar al portapapeles:', err);
-                            alert('No se pudo copiar la URL al portapapeles.');
-                        });
+                const result = await crearSystemIdConTokens(nombreEmpresa);
+                if (result && result.systemId && result.firstToken) {
+                    const redirectURL = `https://votrox.vercel.app/dash/min/usr/\${result.systemId}/\${result.firstToken}/\${encodeURIComponent('default')}.html`;
+                    const authURL = `${AUTH_URL}?redirecturl=${encodeURIComponent(redirectURL)}&systemID=${result.systemId}&verify=${result.firstToken}&enterprice=${encodeURIComponent(nombreEmpresa)}`;
+                    systemIdSpan.textContent = result.systemId;
+                    urlOutputPre.textContent = authURL;
+                    resultadoDiv.style.display = 'block';
+                    errorMensajeP.style.display = 'none';
+                } else {
+                    errorMensajeP.style.display = 'block';
+                    resultadoDiv.style.display = 'none';
                 }
             });
         });
     </script>
 </body>
 </html>
-
