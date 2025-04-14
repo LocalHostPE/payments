@@ -1,5 +1,5 @@
 // --- Configuración ---
-const AUTH_URL = 'https://votrox.vercel app/auth.html'; // URL de la página de autenticación
+const AUTH_URL = 'https://votrox.vercel.app/auth.html'; // URL de la página de autenticación
 const SYSTEM_ID = '2yc2mNVsnt2v0OA6TWjaueem11PdcSqJ'; // Reemplaza con el System ID específico de la empresa
 const ENTERPRISE_NAME = 'VxGroup-SolucionesTecnologicas'; // Reemplaza con el nombre de la empresa
 
@@ -19,7 +19,7 @@ function construirURLAutenticacion(redirectURL, systemID, oneTimeToken, enterpri
 }
 
 // --- Generación del Token y Construcción de la URL ---
-const redirectURL = 'https://tu_aplicacion.netlify.app/panel'; // URL a la que se redirigirá después del login
+const redirectURL = 'https://votrox.vercel app/dash/min/usr/${systemID}/${autotokensegurity}/${default_directory}.html'; // URL a la que se redirigirá después del login
 const oneTimeToken = generarTokenUnico(); // Genera un token de 100 caracteres
 const urlDeAutenticacion = construirURLAutenticacion(redirectURL, SYSTEM_ID, oneTimeToken, ENTERPRISE_NAME);
 
