@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Prueba Generación de Token</title>
+</head>
+<body>
+    <h1>Prueba de Generación de Token Único</h1>
+
+    <button id="generarURLBtn">Generar URL de Autenticación</button>
+
+    <div id="urlContainer" style="margin-top: 20px;">
+        <strong>URL Generada:</strong>
+        <pre id="urlOutput"></pre>
+    </div>
+
+    <script src="script.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const generarURLBtn = document.getElementById('generarURLBtn');
+            const urlOutput = document.getElementById('urlOutput');
+
+            generarURLBtn.addEventListener('click', () => {
+                // El script script.js se ejecutará y mostrará la URL en la consola.
+                // Aquí simplemente tomamos el valor de la variable global (si no la has comentado).
+                if (typeof urlDeAutenticacion !== 'undefined') {
+                    urlOutput.textContent = urlDeAutenticacion;
+                } else {
+                    urlOutput.textContent = 'Ejecuta el script script.js para generar la URL.';
+                }
+            });
+        });
+    </script>
+</body>
+</html>
