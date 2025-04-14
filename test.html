@@ -2,15 +2,20 @@
 <html>
 <head>
     <title>Prueba Generación de Token</title>
+    <style>
+        #urlContainer { margin-top: 20px; }
+        #urlOutput { white-space: pre-wrap; }
+    </style>
 </head>
 <body>
     <h1>Prueba de Generación de Token Único</h1>
 
     <button id="generarURLBtn">Generar URL de Autenticación</button>
-
-    <div id="urlContainer" style="margin-top: 20px;">
+    <div id="urlContainer">
         <strong>URL Generada:</strong>
         <pre id="urlOutput"></pre>
+        <button id="copiarURLBtn" style="display: none; margin-top: 10px;">Copiar URL</button>
+        <p id="copiadoMensaje" style="color: green; display: none;">¡URL copiada al portapapeles!</p>
     </div>
 
     <script src="script.js"></script>
@@ -18,17 +23,37 @@
         document.addEventListener('DOMContentLoaded', () => {
             const generarURLBtn = document.getElementById('generarURLBtn');
             const urlOutput = document.getElementById('urlOutput');
+            const copiarURLBtn = document.getElementById('copiarURLBtn');
+            const copiadoMensaje = document.getElementById('copiadoMensaje');
 
             generarURLBtn.addEventListener('click', () => {
-                // El script script.js se ejecutará y mostrará la URL en la consola.
-                // Aquí simplemente tomamos el valor de la variable global (si no la has comentado).
                 if (typeof urlDeAutenticacion !== 'undefined') {
                     urlOutput.textContent = urlDeAutenticacion;
+                    copiarURLBtn.style.display = 'inline-block';
                 } else {
                     urlOutput.textContent = 'Ejecuta el script script.js para generar la URL.';
+                    copiarURLBtn.style.display = 'none';
+                }
+                copiadoMensaje.style.display = 'none'; // Ocultar mensaje al generar nueva URL
+            });
+
+            copiarURLBtn.addEventListener('click', () => {
+                if (urlOutput.textContent) {
+                    navigator.clipboard.writeText(urlOutput.textContent)
+                        .then(() => {
+                            copiadoMensaje.style.display = 'block';
+                            setTimeout(() => {
+                                copiadoMensaje.style.display = 'none';
+                            }, 2000); // Ocultar mensaje después de 2 segundos
+                        })
+                        .catch(err => {
+                            console.error('Error al copiar al portapapeles:', err);
+                            alert('No se pudo copiar la URL al portapapeles.');
+                        });
                 }
             });
         });
     </script>
 </body>
 </html>
+
