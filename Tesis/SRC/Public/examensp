@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tesis Prueba #2</title>
+</head>
+<style>
+  body {
+    font-family: sans-seref;
+    background-color: pink;
+  }
+</style>
+<body>
+  <div class="Titulos">
+    <h1 style="text-align: center;">
+      Realiza Este Ejercicio En Su Tesis
+    </h1>
+  </div>
+  <div class="ContenidoWeb">
+    <p style="text-align: center;">
+      Realiza Este Ejercicio El Live Coding Con Tu Instructor Debes Realizar Todo Esto Y Cumplir Las Reglas Puestas Por Tu Instructor
+    </p>
+  </div>
+  <h1>
+    Ejercicio Para Oldin Barrios
+  </h1>
+  <p style="text-align: center;">
+Realiza Los Ejercicios A continuación
+  </p>
+  <ul style="text-align: center;">
+    <li>
+      <p>
+        Realiza Un Elemento Perzonalizado Footer
+        </p>
+      <p>
+Realiza Una Página Web Desde Cero
+      </p>
+    <p>
+      Explica Que Elementos Usaste
+    </p>
+  <p>
+    Explica Tu Codigo
+  </p>
+    </li>
+  </ul>
+  <footer style="position: fixed; bottom: 0; left: 0; width: 100%; padding: 1px; background-color: red;">
+    <p style="text-align: center;">
+      Footer Pegado Al Fondo
+    </p>
+  </footer>
+</body>
+</html>
